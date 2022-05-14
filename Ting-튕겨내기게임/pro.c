@@ -24,9 +24,7 @@
 #define YELLOW2	14
 #define WHITE	15
 
-#define STAR1 'O' // player 표시
-#define STAR2 'X' // player2 표시
-#define BLANK '.' // ' ' 로하면 흔적이 지워진다 
+#define BLANK ' '
 
 #define ESC 0x1b //  ESC 누르면 종료
 
@@ -44,7 +42,10 @@
 #define RIGHT2	'd'
 
 #define WIDTH 80
-#define HEIGHT 24
+#define HEIGHT 30
+
+int keep_moving = 1;
+int Delay = 100; // 100 msec delay, 이 값을 줄이면 속도가 빨라진다.
 
 void removeCursor(void);
 void putheart(int x, int y);
@@ -57,7 +58,9 @@ void deleteshield(int x, int y);
 void gotoxy(int x, int y);
 void textcolor(int fg_color, int bg_color);
 void draw_box(int x1, int y1, int x2, int y2);
-void displayhp(int hp);
+void displayhp(int x, int y, int hp);
+void putarrow_up(int x, int y);
+void erasestar(int x, int y);
 
 ////////////////////////////////////////////////////////////////////main
 void main() {
@@ -65,7 +68,10 @@ void main() {
 	static int bossx = 31, bossy = 3;
 	unsigned char ch = 0;
 	int playerhp = 10, bosshp = 36;
-	
+	int product, direction, shield = 0;
+	int oldx, oldy, newx, newy;
+	newx = oldx = 38;
+	newy = oldy = 10;
 
 	removeCursor();
 	putheart(playerx, playery);
@@ -73,10 +79,8 @@ void main() {
 	putshieldup(playerx, playery);
 
 	while (1) {
-		gotoxy(2, 1);
-		displayhp(bosshp); // 보스 hp 표시
-		gotoxy(2, 28);
-		displayhp(playerhp); // 플레이어 hp 표시
+		displayhp(2, 1, bosshp); // 보스 hp 표시
+		displayhp(2, 28, playerhp); // 플레이어 hp 표시
 
 		if (_kbhit() == 1) {  // 키보드가 눌려져 있으면
 			ch = _getch(); // key 값을 읽는다
@@ -89,36 +93,59 @@ void main() {
 				ch = _getch();
 				switch (ch) {
 				case UP:
+					shield = 0;
 					deleteshield(playerx, playery);
 					putshieldup(playerx, playery);
 					break;
 				case DOWN:
+					shield = 1;
 					deleteshield(playerx, playery);
 					putshielddown(playerx, playery);
 					break;
 				case LEFT:
+					shield = 2;
 					deleteshield(playerx, playery);
 					putshieldleft(playerx, playery);
 					break;
 				case RIGHT:
+					shield = 3;
 					deleteshield(playerx, playery);
 					putshieldright(playerx, playery);
 					break;
 				}
 			}
-			else {
-				// 특수 문자가 아니지만 AWSD를 방향키 대신 사용하는 경우 처리
-				switch (ch) {
-				case UP2:
-					putshieldup(playerx, playery); break;
-				case DOWN2:
-					return;
-				case LEFT2:
-					return;
-				case RIGHT2:
-					return;
-				}
+		}
+
+		//쉴드 위치에 따른 상호작용
+
+		if (keep_moving == 1) {
+			
+			if (oldy >= HEIGHT - 1) {
+				erasestar(oldx, oldy); // 마지막 위치의 * 를 지우고
+				//keep_moving = 2;
+				//continue;
 			}
+			else if (shield == 0 && oldy > playery - 5) {
+				erasestar(oldx, oldy);
+			}
+
+			else if (oldy > playery-2) { //플레이어에 닿으면
+				erasestar(oldx, oldy); // 마지막 위치의 * 를 지우고
+				playerhp--;
+				displayhp(2, 28, playerhp); // 플레이어 hp 표시
+				putheart(playerx, playery);
+				//keep_moving = 2;
+				//continue;
+			}
+			else {
+				newy = oldy + 1;
+				erasestar(oldx, oldy); // 마지막 위치의 * 를 지우고
+				putarrow_up(newx, newy); // 새로운 위치에서 * 를 표시한다.
+			}
+			
+			oldx = newx; // 마지막 위치를 기억한다.
+			oldy = newy;
+			Sleep(Delay); // Delay를 줄이면 속도가 빨라진다.
 		}
 	}
 }
@@ -229,18 +256,21 @@ void deleteshield(int x, int y) {
 	printf(" ");
 }
 
-void displayhp(int hp) {
+void displayhp(int x, int y, int hp) {
 	int i;
 
+	gotoxy(x, y);
 	textcolor(WHITE, BLACK);
 	printf("HP ");
 	textcolor(RED1, BLACK);
 	for (i = 0; i < hp; i++) { //hp 만큼 사각형 출력
 		printf("■");
 	}
+	for (i = 0; i <= hp; i++) { //hp 만큼 사각형 출력
+		printf(" ");
+	}
 }
 
-//ch 문자열로 (x1,y1) ~ (x2,y2) box를 그린다.
 void draw_box(int x1, int y1, int x2, int y2)
 {
 	int x, y;
@@ -275,4 +305,16 @@ void gotoxy(int x, int y) { //내가 원하는 위치로 커서 이동
 
 void textcolor(int fg_color, int bg_color) {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fg_color | bg_color << 4);
+}
+
+void putarrow_up(int x, int y)
+{
+	gotoxy(x, y);
+	printf("↓");
+}
+
+void erasestar(int x, int y)
+{
+	gotoxy(x, y);
+	putchar(BLANK);
 }
