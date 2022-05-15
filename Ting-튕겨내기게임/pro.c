@@ -36,10 +36,8 @@
 #define LEFT 0x4b
 #define RIGHT 0x4d
 
-#define UP2		'w'
-#define DOWN2	's'
-#define LEFT2	'a'
-#define RIGHT2	'd'
+#define Z 'z'
+
 
 #define WIDTH 80
 #define HEIGHT 30
@@ -60,15 +58,16 @@ void textcolor(int fg_color, int bg_color);
 void draw_box(int x1, int y1, int x2, int y2);
 void displayhp(int x, int y, int hp);
 void putarrow_up(int x, int y);
-void erasestar(int x, int y);
+void putarrow_down(int x, int y);
+void erase(int x, int y);
 
 ////////////////////////////////////////////////////////////////////main
 void main() {
 	static int playerx = 38, playery = 20;
 	static int bossx = 31, bossy = 3;
 	unsigned char ch = 0;
-	int playerhp = 10, bosshp = 36;
-	int product, direction, shield = 0;
+	int playerhp = 10, bosshp = 36, zcnt = 3;
+	int shield = -1, reflect = 0;
 	int oldx, oldy, newx, newy;
 	newx = oldx = 38;
 	newy = oldy = 10;
@@ -94,58 +93,85 @@ void main() {
 				switch (ch) {
 				case UP:
 					shield = 0;
-					deleteshield(playerx, playery);
 					putshieldup(playerx, playery);
+					Sleep(Delay);
 					break;
 				case DOWN:
 					shield = 1;
-					deleteshield(playerx, playery);
 					putshielddown(playerx, playery);
+					Sleep(Delay);
 					break;
 				case LEFT:
 					shield = 2;
-					deleteshield(playerx, playery);
 					putshieldleft(playerx, playery);
+					Sleep(Delay);
 					break;
 				case RIGHT:
 					shield = 3;
-					deleteshield(playerx, playery);
 					putshieldright(playerx, playery);
+					Sleep(Delay);
 					break;
 				}
 			}
 		}
+		deleteshield(playerx, playery);
 
-		//쉴드 위치에 따른 상호작용
-
-		if (keep_moving == 1) {
-			
-			if (oldy >= HEIGHT - 1) {
-				erasestar(oldx, oldy); // 마지막 위치의 * 를 지우고
-				//keep_moving = 2;
-				//continue;
+		if (ch == Z) { //체력 회복 3회
+			if (playerhp < 10 && zcnt > 0) {
+				playerhp++;
+				zcnt--;
 			}
-			else if (shield == 0 && oldy > playery - 5) {
-				erasestar(oldx, oldy);
-			}
+		}
 
-			else if (oldy > playery-2) { //플레이어에 닿으면
-				erasestar(oldx, oldy); // 마지막 위치의 * 를 지우고
+		if (playerhp == 0) { //게임오버
+			printf("GAME OVER");
+			exit(1);
+		}
+
+		//from up
+		if (shield == 0 && oldy >= playery - 4 && oldy <= playery - 3) { //up방패에닿으면
+			reflect = 1;
+			shield = -1;
+		}
+
+		if (reflect == 1) { //반사
+			if (oldy <= playery - 11) {
+				erase(oldx, oldy); // 마지막 위치의 * 를 지우고
+				bosshp--;
+				reflect = 3; //다음 화살표 대기
+			}
+			else {
+				newy = oldy - 1;
+				erase(oldx, oldy); // 마지막 위치의 * 를 지우고
+				putarrow_down(newx, newy); // 새로운 위치에서 * 를 표시한다.
+
+				oldx = newx; // 마지막 위치를 기억한다.
+				oldy = newy;
+				Sleep(Delay); // Delay를 줄이면 속도가 빨라진다.
+			}
+		}
+
+		if (reflect == 0) {
+			if (reflect == 0 && oldy == playery - 2) { //플레이어에 닿으면
+				erase(oldx, oldy); // 마지막 위치의 * 를 지우고
+				oldx = 28;
+				oldy = 28;
 				playerhp--;
 				displayhp(2, 28, playerhp); // 플레이어 hp 표시
 				putheart(playerx, playery);
-				//keep_moving = 2;
-				//continue;
 			}
-			else {
+			else if (reflect == 0 && oldx == 28 && oldy == 28) {
+				erase(oldx, oldy);
+			}
+			else { //내려옴
 				newy = oldy + 1;
-				erasestar(oldx, oldy); // 마지막 위치의 * 를 지우고
+				erase(oldx, oldy); // 마지막 위치의 * 를 지우고
 				putarrow_up(newx, newy); // 새로운 위치에서 * 를 표시한다.
+
+				oldx = newx; // 마지막 위치를 기억한다.
+				oldy = newy;
+				Sleep(Delay); // Delay를 줄이면 속도가 빨라진다.
 			}
-			
-			oldx = newx; // 마지막 위치를 기억한다.
-			oldy = newy;
-			Sleep(Delay); // Delay를 줄이면 속도가 빨라진다.
 		}
 	}
 }
@@ -313,7 +339,13 @@ void putarrow_up(int x, int y)
 	printf("↓");
 }
 
-void erasestar(int x, int y)
+void putarrow_down(int x, int y)
+{
+	gotoxy(x, y);
+	printf("↑");
+}
+
+void erase(int x, int y)
 {
 	gotoxy(x, y);
 	putchar(BLANK);
