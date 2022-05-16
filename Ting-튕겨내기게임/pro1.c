@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// »ö»ó Á¤ÀÇ
+// ìƒ‰ìƒ ì •ì˜
 #define BLACK	0
 #define BLUE1	1
 #define GREEN1	2
@@ -26,12 +26,12 @@
 
 #define BLANK ' '
 
-#define ESC 0x1b //  ESC ´©¸£¸é Á¾·á
+#define ESC 0x1b //  ESC ëˆ„ë¥´ë©´ ì¢…ë£Œ
 
-#define SPECIAL1 0xe0 // Æ¯¼öÅ°´Â 0xe0 + key °ªÀ¸·Î ±¸¼ºµÈ´Ù.
-#define SPECIAL2 0x00 // keypad °æ¿ì 0x00 + key ·Î ±¸¼ºµÈ´Ù.
+#define SPECIAL1 0xe0 // íŠ¹ìˆ˜í‚¤ëŠ” 0xe0 + key ê°’ìœ¼ë¡œ êµ¬ì„±ëœë‹¤.
+#define SPECIAL2 0x00 // keypad ê²½ìš° 0x00 + key ë¡œ êµ¬ì„±ëœë‹¤.
 
-#define UP  0x48 // Up key´Â 0xe0 + 0x48 µÎ°³ÀÇ °ªÀÌ µé¾î¿Â´Ù.
+#define UP  0x48 // Up keyëŠ” 0xe0 + 0x48 ë‘ê°œì˜ ê°’ì´ ë“¤ì–´ì˜¨ë‹¤.
 #define DOWN 0x50
 #define LEFT 0x4b
 #define RIGHT 0x4d
@@ -43,7 +43,7 @@
 #define HEIGHT 30
 
 int keep_moving = 1;
-int Delay = 100; // 100 msec delay, ÀÌ °ªÀ» ÁÙÀÌ¸é ¼Óµµ°¡ »¡¶óÁø´Ù.
+int Delay = 100; // 100 msec delay, ì´ ê°’ì„ ì¤„ì´ë©´ ì†ë„ê°€ ë¹¨ë¼ì§„ë‹¤.
 
 void removeCursor(void);
 void putheart(int x, int y);
@@ -78,17 +78,17 @@ void main() {
 	putshieldup(playerx, playery);
 
 	while (1) {
-		displayhp(2, 1, bosshp); // º¸½º hp Ç¥½Ã
-		displayhp(2, 28, playerhp); // ÇÃ·¹ÀÌ¾î hp Ç¥½Ã
+		displayhp(2, 1, bosshp); // ë³´ìŠ¤ hp í‘œì‹œ
+		displayhp(2, 28, playerhp); // í”Œë ˆì´ì–´ hp í‘œì‹œ
 
-		if (_kbhit() == 1) {  // Å°º¸µå°¡ ´­·ÁÁ® ÀÖÀ¸¸é
-			ch = _getch(); // key °ªÀ» ÀĞ´Â´Ù
+		if (_kbhit() == 1) {  // í‚¤ë³´ë“œê°€ ëˆŒë ¤ì ¸ ìˆìœ¼ë©´
+			ch = _getch(); // key ê°’ì„ ì½ëŠ”ë‹¤
 
-			if (ch == ESC)// ÇÁ·Î±×·¥ Á¾·á
+			if (ch == ESC)// í”„ë¡œê·¸ë¨ ì¢…ë£Œ
 				exit(1);
 
-			if (ch == SPECIAL1 || ch == SPECIAL2) { // ¸¸¾à Æ¯¼öÅ°
-				// ¿¹¸¦ µé¾î UP keyÀÇ °æ¿ì 0xe0 0x48 µÎ°³ÀÇ ¹®ÀÚ°¡ µé¾î¿Â´Ù.
+			if (ch == SPECIAL1 || ch == SPECIAL2) { // ë§Œì•½ íŠ¹ìˆ˜í‚¤
+				// ì˜ˆë¥¼ ë“¤ì–´ UP keyì˜ ê²½ìš° 0xe0 0x48 ë‘ê°œì˜ ë¬¸ìê°€ ë“¤ì–´ì˜¨ë‹¤.
 				ch = _getch();
 				switch (ch) {
 				case UP:
@@ -116,67 +116,67 @@ void main() {
 		}
 		deleteshield(playerx, playery);
 
-		if (ch == Z) { //Ã¼·Â È¸º¹ 3È¸
+		if (ch == Z) { //ì²´ë ¥ íšŒë³µ 3íšŒ
 			if (playerhp < 10 && zcnt > 0) {
 				playerhp++;
 				zcnt--;
 			}
 		}
 
-		if (playerhp == 0) { //°ÔÀÓ¿À¹ö
+		if (playerhp == 0) { //ê²Œì„ì˜¤ë²„
 			printf("GAME OVER");
 			exit(1);
 		}
 
 		//from up
-		if (shield == 0 && oldy >= playery - 4 && oldy <= playery - 3) { //up¹æÆĞ¿¡´êÀ¸¸é
+		if (shield == 0 && oldy >= playery - 4 && oldy <= playery - 3) { //upë°©íŒ¨ì—ë‹¿ìœ¼ë©´
 			reflect = 1;
 			shield = -1;
 		}
 
-		if (reflect == 1) { //¹İ»ç
+		if (reflect == 1) { //ë°˜ì‚¬
 			if (oldy <= playery - 11) {
-				erase(oldx, oldy); // ¸¶Áö¸· À§Ä¡ÀÇ * ¸¦ Áö¿ì°í
+				erase(oldx, oldy); // ë§ˆì§€ë§‰ ìœ„ì¹˜ì˜ * ë¥¼ ì§€ìš°ê³ 
 				bosshp--;
-				reflect = 3; //´ÙÀ½ È­»ìÇ¥ ´ë±â
+				reflect = 3; //ë‹¤ìŒ í™”ì‚´í‘œ ëŒ€ê¸°
 			}
 			else {
 				newy = oldy - 1;
-				erase(oldx, oldy); // ¸¶Áö¸· À§Ä¡ÀÇ * ¸¦ Áö¿ì°í
-				putarrow_down(newx, newy); // »õ·Î¿î À§Ä¡¿¡¼­ * ¸¦ Ç¥½ÃÇÑ´Ù.
+				erase(oldx, oldy); // ë§ˆì§€ë§‰ ìœ„ì¹˜ì˜ * ë¥¼ ì§€ìš°ê³ 
+				putarrow_down(newx, newy); // ìƒˆë¡œìš´ ìœ„ì¹˜ì—ì„œ * ë¥¼ í‘œì‹œí•œë‹¤.
 
-				oldx = newx; // ¸¶Áö¸· À§Ä¡¸¦ ±â¾ïÇÑ´Ù.
+				oldx = newx; // ë§ˆì§€ë§‰ ìœ„ì¹˜ë¥¼ ê¸°ì–µí•œë‹¤.
 				oldy = newy;
-				Sleep(Delay); // Delay¸¦ ÁÙÀÌ¸é ¼Óµµ°¡ »¡¶óÁø´Ù.
+				Sleep(Delay); // Delayë¥¼ ì¤„ì´ë©´ ì†ë„ê°€ ë¹¨ë¼ì§„ë‹¤.
 			}
 		}
 
 		if (reflect == 0) {
-			if (reflect == 0 && oldy == playery - 2) { //ÇÃ·¹ÀÌ¾î¿¡ ´êÀ¸¸é
-				erase(oldx, oldy); // ¸¶Áö¸· À§Ä¡ÀÇ * ¸¦ Áö¿ì°í
+			if (reflect == 0 && oldy == playery - 2) { //í”Œë ˆì´ì–´ì— ë‹¿ìœ¼ë©´
+				erase(oldx, oldy); // ë§ˆì§€ë§‰ ìœ„ì¹˜ì˜ * ë¥¼ ì§€ìš°ê³ 
 				oldx = 28;
 				oldy = 28;
 				playerhp--;
-				displayhp(2, 28, playerhp); // ÇÃ·¹ÀÌ¾î hp Ç¥½Ã
+				displayhp(2, 28, playerhp); // í”Œë ˆì´ì–´ hp í‘œì‹œ
 				putheart(playerx, playery);
 			}
 			else if (reflect == 0 && oldx == 28 && oldy == 28) {
 				erase(oldx, oldy);
 			}
-			else { //³»·Á¿È
+			else { //ë‚´ë ¤ì˜´
 				newy = oldy + 1;
-				erase(oldx, oldy); // ¸¶Áö¸· À§Ä¡ÀÇ * ¸¦ Áö¿ì°í
-				putarrow_up(newx, newy); // »õ·Î¿î À§Ä¡¿¡¼­ * ¸¦ Ç¥½ÃÇÑ´Ù.
+				erase(oldx, oldy); // ë§ˆì§€ë§‰ ìœ„ì¹˜ì˜ * ë¥¼ ì§€ìš°ê³ 
+				putarrow_up(newx, newy); // ìƒˆë¡œìš´ ìœ„ì¹˜ì—ì„œ * ë¥¼ í‘œì‹œí•œë‹¤.
 
-				oldx = newx; // ¸¶Áö¸· À§Ä¡¸¦ ±â¾ïÇÑ´Ù.
+				oldx = newx; // ë§ˆì§€ë§‰ ìœ„ì¹˜ë¥¼ ê¸°ì–µí•œë‹¤.
 				oldy = newy;
-				Sleep(Delay); // Delay¸¦ ÁÙÀÌ¸é ¼Óµµ°¡ »¡¶óÁø´Ù.
+				Sleep(Delay); // Delayë¥¼ ì¤„ì´ë©´ ì†ë„ê°€ ë¹¨ë¼ì§„ë‹¤.
 			}
 		}
 	}
 }
 
-void removeCursor(void) { // Ä¿¼­¸¦ ¾Èº¸ÀÌ°Ô ÇÑ´Ù
+void removeCursor(void) { // ì»¤ì„œë¥¼ ì•ˆë³´ì´ê²Œ í•œë‹¤
 
 	CONSOLE_CURSOR_INFO curInfo;
 	GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
@@ -187,72 +187,72 @@ void removeCursor(void) { // Ä¿¼­¸¦ ¾Èº¸ÀÌ°Ô ÇÑ´Ù
 void putheart(int x, int y) {
 	gotoxy(x, y); //player
 	textcolor(GREEN1, BLACK);
-	printf("¢¾");
+	printf("â™¥");
 
-	textcolor(GRAY2, BLACK); //player¸¦ °¡µÎ°í ÀÖ´Â »óÀÚ
+	textcolor(GRAY2, BLACK); //playerë¥¼ ê°€ë‘ê³  ìˆëŠ” ìƒì
 	draw_box(x - 4, y - 2, x + 4, y + 2);
 }
 
 void putboss(int x, int y) {
 	textcolor(WHITE, BLACK);
 	gotoxy(x + 6, y); //boss
-	printf("¡á¡á¡á¡á¡á");
+	printf("â– â– â– â– â– ");
 	gotoxy(x + 7, y + 1);
-	printf("¡á¡á¡á¡á");
+	printf("â– â– â– â– ");
 	gotoxy(x + 6, y + 2);
-	printf("¡á¡á¡á¡á¡á");
+	printf("â– â– â– â– â– ");
 	gotoxy(x + 5, y + 3);
-	printf("¡á¡á¡á  ¡á");
+	printf("â– â– â–   â– ");
 	gotoxy(x + 3, y + 4);
-	printf("¡á¡á¡á");
+	printf("â– â– â– ");
 	gotoxy(x + 2, y + 5);
-	printf("¡á¡á¡á");
+	printf("â– â– â– ");
 	gotoxy(x, y + 6);
-	printf("¡á¡á¡á");
+	printf("â– â– â– ");
 	gotoxy(x - 1, y + 7);
-	printf("¡á¡á¡á");
+	printf("â– â– â– ");
 	gotoxy(x, y + 8);
-	printf("¡á¡á");
+	printf("â– â– ");
 }
 
 void putshieldup(int x, int y) {
 	gotoxy(x - 4, y - 3); //up
 	textcolor(GREEN1, BLACK);
-	printf("¢Ã¢Ã¢Ã¢Ã¢Ã");
+	printf("â–£â–£â–£â–£â–£");
 }
 
 void putshielddown(int x, int y) {
 	gotoxy(x - 4, y + 3); //down
 	textcolor(GREEN1, BLACK);
-	printf("¢Ã¢Ã¢Ã¢Ã¢Ã");
+	printf("â–£â–£â–£â–£â–£");
 }
 
 void putshieldleft(int x, int y) {
 	gotoxy(x - 6, y - 2); //down
 	textcolor(GREEN1, BLACK);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x - 6, y - 1);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x - 6, y);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x - 6, y + 1);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x - 6, y + 2);
-	printf("¢Ã");
+	printf("â–£");
 }
 
 void putshieldright(int x, int y) {
 	gotoxy(x + 6, y - 2); //down
 	textcolor(GREEN1, BLACK);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x + 6, y - 1);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x + 6, y);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x + 6, y + 1);
-	printf("¢Ã");
+	printf("â–£");
 	gotoxy(x + 6, y + 2);
-	printf("¢Ã");
+	printf("â–£");
 }
 
 void deleteshield(int x, int y) {
@@ -289,10 +289,10 @@ void displayhp(int x, int y, int hp) {
 	textcolor(WHITE, BLACK);
 	printf("HP ");
 	textcolor(RED1, BLACK);
-	for (i = 0; i < hp; i++) { //hp ¸¸Å­ »ç°¢Çü Ãâ·Â
-		printf("¡á");
+	for (i = 0; i < hp; i++) { //hp ë§Œí¼ ì‚¬ê°í˜• ì¶œë ¥
+		printf("â– ");
 	}
-	for (i = 0; i <= hp; i++) { //hp ¸¸Å­ »ç°¢Çü Ãâ·Â
+	for (i = 0; i <= hp; i++) { //hp ë§Œí¼ ì‚¬ê°í˜• ì¶œë ¥
 		printf(" ");
 	}
 }
@@ -301,32 +301,32 @@ void draw_box(int x1, int y1, int x2, int y2)
 {
 	int x, y;
 
-	for (x = x1; x <= x2; x++) { //°¡·Î 2
+	for (x = x1; x <= x2; x++) { //ê°€ë¡œ 2
 		gotoxy(x, y1);
 		printf("%s", "-");
 		gotoxy(x, y2);
 		printf("%s", "-");
 	}
 
-	for (y = y1; y <= y2; y++) { //¼¼·Î 2
+	for (y = y1; y <= y2; y++) { //ì„¸ë¡œ 2
 		gotoxy(x1, y);
-		printf("%s", "¦­");
+		printf("%s", "â”ƒ");
 		gotoxy(x2, y);
-		printf("%s", "¦­");
+		printf("%s", "â”ƒ");
 	}
 	gotoxy(x1, y1);
-	printf("%s", "¦®");
+	printf("%s", "â”");
 	gotoxy(x2, y1);
-	printf("%s", "¦¯");
+	printf("%s", "â”“");
 	gotoxy(x1, y2);
-	printf("%s", "¦±");
+	printf("%s", "â”—");
 	gotoxy(x2, y2);
-	printf("%s", "¦°");
+	printf("%s", "â”›");
 }
 
-void gotoxy(int x, int y) { //³»°¡ ¿øÇÏ´Â À§Ä¡·Î Ä¿¼­ ÀÌµ¿
+void gotoxy(int x, int y) { //ë‚´ê°€ ì›í•˜ëŠ” ìœ„ì¹˜ë¡œ ì»¤ì„œ ì´ë™
 	COORD pos = { x, y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);// WIN32API ÇÔ¼öÀÔ´Ï´Ù. ÀÌ°Ç ¾ËÇÊ¿ä ¾ø¾î¿ä
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);// WIN32API í•¨ìˆ˜ì…ë‹ˆë‹¤. ì´ê±´ ì•Œí•„ìš” ì—†ì–´ìš”
 }
 
 void textcolor(int fg_color, int bg_color) {
@@ -336,13 +336,13 @@ void textcolor(int fg_color, int bg_color) {
 void putarrow_up(int x, int y)
 {
 	gotoxy(x, y);
-	printf("¡é");
+	printf("â†“");
 }
 
 void putarrow_down(int x, int y)
 {
 	gotoxy(x, y);
-	printf("¡è");
+	printf("â†‘");
 }
 
 void erase(int x, int y)
