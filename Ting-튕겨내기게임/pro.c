@@ -5,6 +5,8 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 // 색상 정의
 #define BLACK	0
@@ -24,8 +26,6 @@
 #define YELLOW2	14
 #define WHITE	15
 
-#define STAR1 'O' // player1 표시
-#define STAR2 'X' // player2 표시
 #define BLANK ' ' // ' ' 로하면 흔적이 지워진다 
 
 #define ESC 0x1b //  ESC 누르면 종료
@@ -52,10 +52,9 @@
 #define TABLEWIDTH 75
 #define TABLEHEIGHT 70
 
+int mode = 1; // 1인플레이 모드가 기본
 int Delay = 1; // 100 msec delay, 이 값을 줄이면 속도가 빨라진다.
 int keep_moving = 1; // 1:계속이동, 0:한칸씩이동.
-int time_out = 30; // 제한시간
-int score[2] = { 0 };
 int called[2];
 char team1[20] = "레드팀";
 char team2[20] = "블루팀";
@@ -357,11 +356,11 @@ void intro(void) {
 	printf("■");
 
 
-	while (1) { // 스페이스 바를 누르면 게임시작
+	while (1) { // 스페이스 바를 누르면 글씨 깜빡이고 게임시작, 아니면 계속 깜빡이고 있음
 		if (_kbhit()) {
 			ch = _getch();
 			if (ch == SPACE) {
-				for (int i = 0; i < 5; i++) {
+				for (int i = 0; i < 6; i++) {
 					textcolor(BLACK, WHITE);
 					gotoxy(52, 64);
 					printf("                                     ");
@@ -942,15 +941,96 @@ void player2(unsigned char ch, int *p2x, int *p2y) {
 	}
 }
 
+void selectmode(void) {
+	unsigned char ch;
+
+	while (1) { // 모드선택 대기
+		textcolor(BLACK, WHITE);
+		gotoxy(60, 20);
+		printf("모드를 선택해주세요");
+		gotoxy(53, 21);
+		printf("(선택 후 스페이스 바를 눌러 결정)");
+		gotoxy(43, 30);
+		printf("1인 플레이");
+		gotoxy(85, 30);
+		printf("2인 플레이");
+		
+		//선택된 모드 표시
+		if (mode == 1) {
+			gotoxy(83, 29);
+			printf("              ");
+			gotoxy(83, 30);
+			printf(" ");
+			gotoxy(95, 30);
+			printf(" ");
+			gotoxy(83, 31);
+			printf("              ");
+
+			gotoxy(41, 29);
+			printf("┏━━━━━┓");
+			gotoxy(41, 30);
+			printf("┃");
+			gotoxy(53, 30);
+			printf("┃");
+			gotoxy(41, 31);
+			printf("┗━━━━━┛");
+		}
+		else if (mode == 2) {
+			gotoxy(41, 29);
+			printf("              ");
+			gotoxy(41, 30);
+			printf(" ");
+			gotoxy(53, 30);
+			printf(" ");
+			gotoxy(41, 31);
+			printf("              ");
+
+			gotoxy(83, 29);
+			printf("┏━━━━━┓");
+			gotoxy(83, 30);
+			printf("┃");
+			gotoxy(95, 30);
+			printf("┃");
+			gotoxy(83, 31);
+			printf("┗━━━━━┛");
+		}
+
+		ch = _getch();
+
+		//모드 고르기 (모드 표시 이동)
+		if (ch == LEFT || ch == LEFT2) {
+			PlaySound(TEXT("hit1.wav"), NULL, SND_ASYNC);
+			mode = 1;
+		}
+		else if (ch == RIGHT || ch == RIGHT2) {
+			PlaySound(TEXT("hit2.wav"), NULL, SND_ASYNC);
+			mode = 2;
+		}
+
+		//선택 확정
+		if (ch == SPACE) {
+			for (int i = 20; i < 95; i++) {
+				gotoxy(40, i);
+				printf("                                                          ");
+			}
+			break;
+		}
+	}
+}
+
 void teamname(void) {
 	textcolor(RED1, WHITE);
-	gotoxy(58, 20);
+	gotoxy(56, 20);
 	printf("레드팀의 이름을 적어주세요");
+	gotoxy(56, 21);
+	printf("  (띄어쓰기 X, 8자 이내)");
 	gotoxy(58, 22);
 	scanf("%s", team1);
 	textcolor(BLUE1, WHITE);
-	gotoxy(58, 30);
+	gotoxy(56, 30);
 	printf("블루팀의 이름을 적어주세요");
+	gotoxy(56, 31);
+	printf("  (띄어쓰기 X, 8자 이내)");
 	gotoxy(58, 32);
 	scanf("%s", team2);
 }
@@ -964,7 +1044,6 @@ void init_game() {
 	Delay = 1;
 
 	cls(WHITE, BLACK);
-	removeCursor();
 	sprintf(cmd, "mode con cols=%d lines=%d", WIDTH, HEIGHT);
 	system(cmd);
 
@@ -977,11 +1056,15 @@ void init_game() {
 }
 
 void main() {//////////////////////////////////////////////////////////////////////main
-	unsigned char ch;
-	int p1x, p1y, p2x, p2y;
-	int sv, nball_x, nball_y, oball_x, oball_y;
-	int goal_x, goal_y, ballmove, spike, speed;
-	int win, score1, score2;
+	clock_t start, now;
+	clock_t duration, hour, min, sec;
+	unsigned char ch, ch2;
+	int p1x, p1y, p2x, p2y, sv, win, score1, score2;
+	int ballmove, spike, speed, autosvt, correct;
+	double goal_x, goal_y, nball_x, nball_y, oball_x, oball_y, h, w, angle;
+
+	//커서 없애기
+	removeCursor();
 
 	//인트로
 	intro();
@@ -995,14 +1078,17 @@ void main() {///////////////////////////////////////////////////////////////////
 		}
 	}
 
+	//1인플레이 모드와 2인플레이 모드 중 하나를 선택하시오
+	selectmode();
+
 	//팀명을 적으시오
 	teamname();
 
 START: //경기를 처음부터 다시 할 경우
-	p1x = 60, p1y = 60, p2x = 15, p2y = 3;
-	sv = 0, nball_x = 0, nball_y = 0, oball_x = 0, oball_y = 0;
-	goal_x = 0, goal_y = 0, ballmove = 1, spike = 1, speed = 5;
-	win = 0, score1 = 0, score2 = 0;
+	p1x = 60, p1y = 60, p2x = 15, p2y = 3, sv = 0, win = 0, score1 = 0, score2 = 0;
+	ballmove = 1, spike = 1, speed = 5, autosvt = 0, correct = 0;
+	nball_x = 0, nball_y = 0, oball_x = 0, oball_y = 0, goal_x = 0, goal_y = 0, angle = 1;
+	ch2 = LEFT2;
 
 	init_game();
 
@@ -1011,7 +1097,24 @@ START: //경기를 처음부터 다시 할 경우
 	putplayer1(p1x, p1y); //플레이어 배치
 	putplayer2(p2x, p2y);
 
-	hline(95);//구분선 그리기
+	hline(95);//경기장과 점수판 사이에 구분선 그리기
+
+	//조작키 설명
+	textcolor(WHITE, BLACK);
+	gotoxy(107, 58);
+	printf("                        ");
+	gotoxy(107, 59);
+	printf("   <조작 방법>          ");
+	gotoxy(107, 60);
+	printf("   player1 : ← 와 →   ");
+	gotoxy(107, 61);
+	printf("   player2 : A  와  D   ");
+	gotoxy(107, 62);
+	printf("   서브 : J             ");
+	gotoxy(107, 63);
+	printf("   경기 종료 : ESC      ");
+	gotoxy(107, 64);
+	printf("                        ");
 
 	putscore1(105, 38, score1); //점수판 배치
 	putscore2(105, 20, score2);
@@ -1027,7 +1130,9 @@ START: //경기를 처음부터 다시 할 경우
 	sv = 1 + rand() % 2; //랜덤 서브, 1이면 player1 2면 player2
 
 SET: //경기 세팅, 점수가 났을 경우 또 불러온다
+
 	spike = 1;
+	correct = 1;
 	if (win == 1) sv == 1;
 	else if (win == 2) sv == 2;
 
@@ -1043,44 +1148,129 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 	}
 	putball(oball_x, oball_y, speed); //공 배치
 
-	goal_x = 5 + rand() % TABLEWIDTH - 5; //랜덤으로 공이 향하는 좌표의 x값 정함
+	goal_x = rand() % TABLEWIDTH + 1; //랜덤으로 공이 향하는 좌표의 x값 정함
 
-	gotoxy(107, 10);
-	textcolor(BLACK, WHITE);
-	printf("J 를 누르면 서브합니다");
 
-	while (1) { // 서브 대기
-		ch = _getch();
-		if (ch == J) {
+
+	if (mode == 1 && sv == 2) {
+		while (1) {
+			autosvt = rand() % 6; //0 ~ 8 (0 ~ 5초후 서브)
+			for (int i = 0; i < autosvt; i++) { //1회당 1초
+				textcolor(BLACK, WHITE);
+				gotoxy(99, 9); //104에서 5 빼자, 팀명이 8글자라 삐져나옴
+				printf("                          ");
+				gotoxy(100, 10);
+				printf("  서브를 기다리십시오...  ");
+				gotoxy(100, 11);
+				printf("                          ");
+				Sleep(500);
+				textcolor(WHITE, BLACK);
+				gotoxy(100, 9);
+				printf("                          ");
+				gotoxy(100, 10);
+				printf("  서브를 기다리십시오...  ");
+				gotoxy(100, 11);
+				printf("                          ");
+				Sleep(500);
+			}
 			gotoxy(107, 10);
 			textcolor(WHITE, WHITE);
-			printf("J 를 누르면 서브합니다");
+			printf("                              ");
+			PlaySound(TEXT("hit2.wav"), NULL, SND_ASYNC);
 			break;
 		}
 	}
+	else {
+		while (1) { // 서브 대기
+			textcolor(BLACK, WHITE);
+			gotoxy(104, 9);
+			printf("                          ");
+			gotoxy(104, 10);
+			printf("  J 를 누르면 서브합니다  ");
+			gotoxy(104, 11);
+			printf("                          ");
+			Sleep(500);
+			textcolor(WHITE, BLACK);
+			gotoxy(104, 9);
+			printf("                          ");
+			gotoxy(104, 10);
+			printf("  J 를 누르면 서브합니다  ");
+			gotoxy(104, 11);
+			printf("                          ");
+			Sleep(500);
+
+			if (_kbhit() == 1) {
+				ch = _getch();
+				if (ch == J) {
+					gotoxy(107, 10);
+					textcolor(WHITE, WHITE);
+					printf("                              ");
+					PlaySound(TEXT("hit1.wav"), NULL, SND_ASYNC);
+					break;
+				}
+			}
+		}
+	}
+	textcolor(WHITE, WHITE);
+	gotoxy(104, 9);
+	printf("                           ");
+	gotoxy(104, 10);
+	printf("                           ");
+	gotoxy(104, 11);
+	printf("                           ");
 
 	//경기 시작
+	if(score1 == 0 &&score2 == 0)
+		start = clock();
 	while (1) {
+		//경기 시간 표시
+		now = clock();
+		duration = now - start;
+		sec = duration / CLOCKS_PER_SEC;
+		hour = sec / 3600;
+		min = (sec / 60) % 60;
+		sec %= 60;
+		textcolor(WHITE, BLACK);
+		gotoxy(107, 65);
+		printf(" 경기 시간: %d : %02d : %02d ", hour, min, sec);
+		gotoxy(107, 66);
+		printf("                        ");
+
+
 		//탁구대
 		puttable(5, 12);
-		//공
-
+		//공의 이동
 		if (sv == 1) {
 			goal_y = 0;
+			//합동 삼각형 비율 계산 후 이동할 x값 구함 (h : w = 1 : angle)
+			h = goal_y - oball_y; if (h < 0) h *= -1;
+			w = goal_x - oball_x; if (w < 0) w *= -1;
+			angle = w / h;
+
 			if (oball_y > goal_y) { //y축
 				nball_y = oball_y - 1;
 				ballmove = 1;
 			}
 			if (oball_x > goal_x) { //x축
-				nball_x = oball_x - 1;
+				nball_x = oball_x - angle;
 				ballmove = 1;
 			}
 			else if(oball_x < goal_x) {
-				nball_x = oball_x + 1;
+				nball_x = oball_x + angle;
 				ballmove = 1;
 			}
 
 			if (oball_y == goal_y) { //못받아치면
+				textcolor(WHITE, RED1);
+				gotoxy(104, 9);
+				printf("                          ");
+				gotoxy(104, 10);
+				printf("                          ");
+				gotoxy(104, 10);
+				printf("  %s 팀이 득점하였습니다  ", team1);
+				gotoxy(104, 11);
+				printf("                          ");
+				textcolor(YELLOW1, WHITE);
 				eraseball(nball_x, nball_y);
 				eraseball(oball_x, oball_y);
 				score1++;
@@ -1096,8 +1286,9 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 			}
 			else if (p2y <= oball_y && oball_y <= p2y + 7) {
 				if (p2x <= oball_x && oball_x <= p2x + 7) {// 받아치면
-					spike = rand() % 11;
-				    goal_x = 5 + rand() % TABLEWIDTH - 5; //랜덤으로 공이 향하는 좌표의 x값 정함
+					PlaySound(TEXT("hit2.wav"), NULL, SND_ASYNC);
+					spike = rand() % 5;
+				    goal_x = rand() % TABLEWIDTH + 1; //랜덤으로 공이 향하는 좌표의 x값 정함
 					goal_y = 0;
 					sv = 2;
 				}
@@ -1105,20 +1296,35 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 		}
 		else if (sv == 2) {
 			goal_y = 68;
+			//합동 삼각형 비율 계산 후 이동할 x값 구함 (h : w = 1 : angle)
+			h = goal_y - oball_y; if (h < 0) h *= -1;
+			w = goal_x - oball_x; if (w < 0) w *= -1;
+			angle = w / h;
+
 			if (oball_y < goal_y) { //y축
 				nball_y = oball_y + 1;
 				ballmove = 1;
 			}
 			if (oball_x > goal_x) { //x축
-				nball_x = oball_x - 1;
+				nball_x = oball_x - angle;
 				ballmove = 1;
 			}
 			else if (oball_x < goal_x) {
-				nball_x = oball_x + 1;
+				nball_x = oball_x + angle;
 				ballmove = 1;
 			}
 
 			if (oball_y == goal_y) { //못받아치면
+				textcolor(WHITE, BLUE1);
+				gotoxy(104, 9);
+				printf("                          ");
+				gotoxy(104, 10);
+				printf("                          ");
+				gotoxy(104, 10);
+				printf("  %s 팀이 득점하였습니다  ", team2);
+				gotoxy(104, 11);
+				printf("                          ");
+				textcolor(YELLOW1, WHITE);
 				eraseball(nball_x, nball_y);
 				eraseball(oball_x, oball_y);
 				score2++;
@@ -1134,8 +1340,10 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 			}
 			else if (p1y <= oball_y && oball_y <= p1y + 7) {
 				if (p1x <= oball_x && oball_x <= p1x + 7) {// 받아치면
-					spike = rand() % 11;
-				    goal_x = 5 + rand() % TABLEWIDTH - 5; //랜덤으로 공이 향하는 좌표의 x값 정함
+					PlaySound(TEXT("hit1.wav"), NULL, SND_ASYNC);
+					correct = rand() % 5; //mode == 1일 때 실수할 확률을 구함
+					spike = rand() % 5;
+				    goal_x = rand() % TABLEWIDTH + 1; //랜덤으로 공이 향하는 좌표의 x값 정함
 					goal_y = 0;
 					sv = 1;
 				}
@@ -1143,6 +1351,7 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 		}
 		if (spike == 0) speed = 0;
 		else speed = 5;
+
 		if (ballmove) {
 			eraseball(oball_x, oball_y); // 마지막 위치의 # 를 지우고
 			putball(nball_x, nball_y, speed); // 새로운 위치에서 # 를 표시한다.
@@ -1153,48 +1362,103 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 		}
 
 
-		if (_kbhit() == 1) {  // 키보드가 눌려져 있으면
-			ch = _getch(); // key 값을 읽는다
-			// ESC 누르면 프로그램 종료
-			if (ch == ESC) {
-				break;
+		if (mode == 1) {
+			//player2 자동으로 동작
+			// 20% 의 확률로 실수하여 반대로 움직임
+			// 0은 실수로 동작, 그 외는 정확한 동작
+
+			if (correct == 0) {
+				//실수로 동작 (방향키를 누르지 않음)
+				//player2(0, &p2x, &p2y);
 			}
-			if (ch == SPECIAL1 || ch == SPECIAL2) { // 만약 특수키
-				// 예를 들어 UP key의 경우 0xe0 0x48 두개의 문자가 들어온다.
-				ch = _getch();
-				// Player1은 방향키로 움직인다.
-				switch (ch) {
-				case LEFT:
-				case RIGHT:
-					player1(ch, &p1x, &p1y);//player1만 방향 전환
-					player2(0, &p2x, &p2y);
+			else {
+				//정확한 동작
+				if (goal_x-5 < p2x) ch2 = LEFT2;
+				else if (goal_x-5 > p2x) ch2 = RIGHT2;
+			}
+
+			switch (ch2) {
+			case LEFT2:
+			case RIGHT2://player2만 방향 전환
+				player2(ch2, &p2x, &p2y);
+				break;
+			default:// 방향 전환이 아니면
+				player2(0, &p2x, &p2y);
+			}
+
+			//player1 수동으로 동작
+			if (_kbhit() == 1) {  // 키보드가 눌려져 있으면
+				ch = _getch(); // key 값을 읽는다
+				// ESC 누르면 프로그램 종료
+				if (ch == ESC) {
 					break;
-				default: // 방향 전환이 아니면
-					player1(0, &p1x, &p1y);
-					player2(0, &p2x, &p2y);
+				}
+				if (ch == SPECIAL1 || ch == SPECIAL2) { // 만약 특수키
+					// 예를 들어 UP key의 경우 0xe0 0x48 두개의 문자가 들어온다.
+					ch = _getch();
+					// Player1은 방향키로 움직인다.
+					switch (ch) {
+					case LEFT:
+					case RIGHT:
+						player1(ch, &p1x, &p1y);//player1만 방향 전환
+						break;
+					default: // 방향 전환이 아니면
+						player1(0, &p1x, &p1y);
+					}
 				}
 			}
 			else {
-				// Player2은 AWSD 로 움직인다.
-				switch (ch) {
-				case LEFT2:
-				case RIGHT2://player2만 방향 전환
-					player2(ch, &p2x, &p2y);
-					player1(0, &p1x, &p1y);
+				// keyboard 가 눌려지지 않으면 계속 움직인다.
+				// 이동중이던 방향으로 계속 이동
+				player1(0, &p1x, &p1y);
+				//player2(0, &p2x, &p2y);
+			}
+			Sleep(1);
+		}
+		else if (mode == 2) {
+			if (_kbhit() == 1) {  // 키보드가 눌려져 있으면
+				ch = _getch(); // key 값을 읽는다
+				// ESC 누르면 프로그램 종료
+				if (ch == ESC) {
 					break;
-				default:// 방향 전환이 아니면
-					player1(0, &p1x, &p1y);
-					player2(0, &p2x, &p2y);
+				}
+				if (ch == SPECIAL1 || ch == SPECIAL2) { // 만약 특수키
+					// 예를 들어 UP key의 경우 0xe0 0x48 두개의 문자가 들어온다.
+					ch = _getch();
+					// Player1은 방향키로 움직인다.
+					switch (ch) {
+					case LEFT:
+					case RIGHT:
+						player1(ch, &p1x, &p1y);//player1만 방향 전환
+						player2(0, &p2x, &p2y);
+						break;
+					default: // 방향 전환이 아니면
+						player1(0, &p1x, &p1y);
+						player2(0, &p2x, &p2y);
+					}
+				}
+				else {
+					// Player2은 AWSD 로 움직인다.
+					switch (ch) {
+					case LEFT2:
+					case RIGHT2://player2만 방향 전환
+						player2(ch, &p2x, &p2y);
+						player1(0, &p1x, &p1y);
+						break;
+					default:// 방향 전환이 아니면
+						player1(0, &p1x, &p1y);
+						player2(0, &p2x, &p2y);
+					}
 				}
 			}
+			else {
+				// keyboard 가 눌려지지 않으면 계속 움직인다.
+				// 이동중이던 방향으로 계속 이동
+				player1(0, &p1x, &p1y);
+				player2(0, &p2x, &p2y);
+			}
+			Sleep(1);
 		}
-		else {
-			// keyboard 가 눌려지지 않으면 계속 움직인다.
-			// 이동중이던 방향으로 계속 이동
-			player1(0, &p1x, &p1y);
-			player2(0, &p2x, &p2y);
-		}
-		Sleep(1);
 	}
 
 	while (1) {
@@ -1271,7 +1535,36 @@ SET: //경기 세팅, 점수가 났을 경우 또 불러온다
 		printf("                 ■■■          ■■■■■■                                  ■   ");
 		gotoxy(27, 43);
 		printf("                                                                                    ");
-		 
+		
+		if (score1 > score2) {
+			textcolor(WHITE, RED1);
+			gotoxy(104, 9);
+			printf("                          ");
+			gotoxy(104, 10);
+			printf("  %s 팀이 승리하였습니다  ", team1);
+			gotoxy(104, 11);
+			printf("                          ");
+		}
+		else if (score1 < score2) {
+			textcolor(WHITE, BLUE1);
+			gotoxy(104, 9);
+			printf("                          ");
+			gotoxy(104, 10);
+			printf("  %s 팀이 승리하였습니다  ", team2);
+			gotoxy(104, 11);
+			printf("                          ");
+		}
+		else {
+			textcolor(WHITE, YELLOW1);
+			gotoxy(109, 9);
+			printf("              ");
+			gotoxy(109, 10);
+			printf("  동점입니다  ");
+			gotoxy(109, 11);
+			printf("              ");
+		}
+
+
 
 		Sleep(300);
 		if (_kbhit()) {
